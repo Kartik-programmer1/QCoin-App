@@ -1,11 +1,10 @@
-# Simple workflow for deploying static content to GitHub Pages
+# Workflow for deploying static content from the QCoin app to GitHub Pages
 name: Deploy static content to Pages
 
 on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -31,13 +30,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      
+      - name: Create static version directory
+        run: |
+          mkdir -p _site
+          cp -r static _site/
+          cp -r templates/* _site/
+          # Remove any Flask-specific template syntax from HTML files
+          find _site -name "*.html" -exec sed -i 's/{{/<!--{{/g' {} \;
+          find _site -name "*.html" -exec sed -i 's/}}/}}-->/g' {} \;
+          find _site -name "*.html" -exec sed -i 's/{%/<!--{%/g' {} \;
+          find _site -name "*.html" -exec sed -i 's/%}/%}-->/g' {} \;
+          # Fix CSS link in HTML files
+          find _site -name "*.html" -exec sed -i 's/{{ url_for('\''static'\'', filename='\''\(.*\)'\'')}}/\1/g' {} \;
+          # Create a simple README in the static site
+          echo "# QCoin Lottery App" > _site/README.md
+          echo "This is a static preview of the QCoin Lottery app. For the full functional version, please visit [PythonAnywhere](https://your-username.pythonanywhere.com)." >> _site/README.md
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Upload entire repository
-          path: '.'
+          # Upload only the static site directory
+          path: '_site'
+      
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
